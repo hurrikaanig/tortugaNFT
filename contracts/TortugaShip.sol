@@ -13,7 +13,7 @@ contract TortugaShip is ERC721Enumerable, Ownable {
     string public baseURI;
 
     mapping(address => bool) public whitelist;
-
+    mapping(address => bool) public hasMinted;
 
     event Recovered(address token, uint256 amount);
     event ChangedOwner(address indexed oldOwner, address indexed newOwner);
@@ -35,34 +35,46 @@ contract TortugaShip is ERC721Enumerable, Ownable {
         emit Mint(msg.sender, mintIndex);
     }
     
-    function mint(uint256 _numberToMint) public payable {
+    function mint(uint256 _numberToMint) external {
         uint256 supply = totalSupply();
 
-        require(hasSaleStarted == true);
+        require(hasSaleStarted == true, "Sale hasn't started");
+        require(hasMinted[msg.sender] == false, "User already minted");
         require(_numberToMint <= 3, "You can mint maximum 3 ship");
         require(supply + _numberToMint < MAX_SHIP, "Exceeds MAX_SHIP");
 
+        hasMinted[msg.sender] = true;
         for (uint256 i = 0; i < _numberToMint; i++) {
             _mint();
         }
     }
 
-    function mintWhitelist(uint256 _numberToMint) public payable {
+    function mintWhitelist(uint256 _numberToMint) external {
         uint256 supply = totalSupply();
 
         require(hasWhitelistSaleStarted == true);
         require(whitelist[msg.sender] == true);
+        require(hasMinted[msg.sender] == false, "User already minted");
         require(_numberToMint <= 3, "You can mint maximum 3 ship");
         require(supply + _numberToMint < MAX_SHIP, "Exceeds MAX_SHIP");
 
-        whitelist[msg.sender] = false;
-
+        hasMinted[msg.sender] = true;
         for (uint256 i = 0; i < _numberToMint; i++) {
             _mint();
         }
     }
 
-    function setBaseURI(string memory _newBaseURI) public onlyOwner {
+    function mintAdmin(uint256 _numberToMint) external onlyOwner {
+        uint256 supply = totalSupply();
+
+        require(supply + _numberToMint < MAX_SHIP, "Exceeds MAX_SHIP");
+        
+        for (uint256 i = 0; i < _numberToMint; i++) {
+            _mint();
+        }
+    }
+
+    function setBaseURI(string memory _newBaseURI) external onlyOwner {
         baseURI = _newBaseURI;
     }
 
@@ -73,23 +85,23 @@ contract TortugaShip is ERC721Enumerable, Ownable {
         }
     }
 
-    function startDrop() public onlyOwner {
+    function startDrop() external onlyOwner {
         hasSaleStarted = true;
     }
 
-    function pauseDrop() public onlyOwner {
+    function pauseDrop() external onlyOwner {
         hasSaleStarted = false;
     }
 
-    function startWhitelistDrop() public onlyOwner {
+    function startWhitelistDrop() external onlyOwner {
         hasWhitelistSaleStarted = true;
     }
 
-    function pauseWhitelistDrop() public onlyOwner {
+    function pauseWhitelistDrop() external onlyOwner {
         hasWhitelistSaleStarted = false;
     }
     
-    function withdrawAll() public payable onlyOwner {
+    function withdrawAll() external payable onlyOwner {
         require(payable(msg.sender).send(address(this).balance));
     }
 
